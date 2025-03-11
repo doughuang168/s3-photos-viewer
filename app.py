@@ -161,7 +161,7 @@ def index(subpath=''):
             const imageExtensions = /\.(jpe?g|png|gif|webp)$/i;
             
             if (imageExtensions.test(key)) {
-                const url = `/presigned-url?key=${encodeURIComponent(key)}`;
+                /* const url = `/presigned-url?key=${encodeURIComponent(key)}`; */
                 fetch(url)
                     .then(response => {
                         if (!response.ok) throw new Error('Network error');
