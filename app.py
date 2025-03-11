@@ -157,7 +157,7 @@ def index(subpath=''):
                alert('No valid key to preview.');
                return;
             }
-            console.log('Attempting to preview:', key);
+            /* console.log('Attempting to preview:', key); */
             const imageExtensions = /\.(jpe?g|png|gif|webp)$/i;
             
             if (imageExtensions.test(key)) {
@@ -187,9 +187,9 @@ def index(subpath=''):
             }
         }
         
-        window.onerror = function(message, source, lineno, colno, error) {
-          console.error('Global error:', message, source, lineno, colno, error);
-        };
+        //window.onerror = function(message, source, lineno, colno, error) {
+        //  console.error('Global error:', message, source, lineno, colno, error);
+        //};
 
     </script>
 </body>
