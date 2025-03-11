@@ -5,7 +5,7 @@ Simple docker image to view photos resides in AWS S3 Bucket.
 ## Prerequisites
 
 1. Create S3 Bucket, my-bucket
-2. Create IAM role with ready-only s3 access, no console login, iam policy have following template
+2. Create IAM user with only allow ready-only s3 access, no console login, iam policy have following template
 
 
   ```bash
@@ -26,6 +26,18 @@ Simple docker image to view photos resides in AWS S3 Bucket.
       }
     ]
 }    
-    
   ```
-3. Create AUTH_KEY
+3. Create AUTH_KEY with following format
+
+  ```bash
+  <aws_access_key_id>:<aws_secret_access_key>
+  ```
+
+## How to build
+docker build -t s3-photos-viewer .
+## How to run
+docker run -p 8080:8080 \
+           -e BUCKET=<your-aws-s3-bucket> \
+           -e AUTH_KEY=<your-aws-iam-access-key-id>:<your-aws-iam-secret-access-key> \
+           s3-photos-viewer
+				 		   
