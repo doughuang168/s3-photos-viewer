@@ -143,21 +143,30 @@ def index(subpath=''):
         </div>
     {% endfor %}
 
+
     <div id="imageModal" class="modal">
         <span onclick="document.getElementById('imageModal').style.display='none'"
               style="color: white; position: absolute; right: 20px; top: 10px;
                     font-size: 35px; cursor: pointer;">&times;</span>
-        <img class="modal-content" id="modalImage">
+        <img class="modal-content" id="modalImage" style="transition: transform 0.2s ease;">
+        <button id="rotateButton"
+                style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+                       background-color: white; border: none; padding: 10px; cursor: pointer;">
+            Rotate
+        </button>
     </div>
 
+
     <script>
+        let rotationAngle = 0; // Global variable to track rotation angle
+
         function previewImage(key) {
             if (!key || key.trim() === '') {
                console.error('Invalid key passed to previewImage:', key);
                alert('No valid key to preview.');
                return;
             }
-            /* console.log('Attempting to preview:', key); */
+            console.log('Attempting to preview:', key); 
             const imageExtensions = /\.(jpe?g|png|gif|webp)$/i;
             
             if (imageExtensions.test(key)) {
@@ -180,6 +189,13 @@ def index(subpath=''):
                  console.error('Invalid file type for preview:', key);
             }
         }
+
+        // Attach rotation functionality
+        document.getElementById('rotateButton').onclick = function() {
+            rotationAngle = (rotationAngle + 90) % 360; // Increment angle by 90 degrees
+            const modalImage = document.getElementById('modalImage');
+            modalImage.style.transform = `rotate(${rotationAngle}deg)`; // Apply rotation
+        };
 
         window.onclick = function(event) {
             if (event.target.className === 'modal') {
