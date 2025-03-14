@@ -1,9 +1,13 @@
 FROM python:3.9-slim
 
-RUN pip install flask boto3 python-dotenv
-
 RUN mkdir -p /usr/src/s3-photos-viewer
+
 WORKDIR      /usr/src/s3-photos-viewer
+
+COPY requirements.txt .
+
+RUN pip install -r requirements.txt
+
 COPY .       /usr/src/s3-photos-viewer/
 
 RUN adduser -u 5678 --disabled-password --gecos "" s3-photos-viewer \

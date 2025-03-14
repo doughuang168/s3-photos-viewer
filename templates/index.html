@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S3 Browser - {{ bucket }}</title>
+    <style>
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            overflow: auto;
+        }
+        .modal-content {
+            margin: auto;
+            display: block;
+            max-width: 80%;
+            max-height: 80%;
+            transform: rotate(0deg);
+            transition: transform 0.3s;
+        }
+        .close {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .rotate {
+            position: absolute;
+            top: 20px;
+            left: 35px;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bucket: {{ bucket }}</h1>
+    <h2>Current Path: {{ prefix }}</h2>
+
+    <!-- Breadcrumb Navigation -->
+    <div>
+        <a href="{{ url_for('index') }}">Home</a>
+        {% if prefix %}
+            {% for part in prefix.split('/')[:-1] %}
+                / <a href="{{ url_for('index', prefix=prefix.rsplit(part)[0] + part) }}">{{ part }}</a>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- List Folders -->
+    {% if folders %}
+        <h3>Folders</h3>
+        <ul>
+            {% for folder in folders %}
+                <li>📁 <a href="{{ url_for('index', prefix=folder) }}">{{ folder }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <!-- List Files -->
+    {% if files %}
+        <h3>Files</h3>
+        <ul>
+            {% for file in files %}
+                <li>📄 <a href="#" class="file-link" data-url="{{ url_for('view', filename=file) }}">{{ file }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <!-- Modal for image preview -->
+    <div id="imageModal" class="modal">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <span class="rotate" onclick="rotateImage()">🔄 Rotate</span>
+        <img id="modalImage" class="modal-content">
+    </div>
+
+    <script>
+        // Open the modal and set the image source
+        function openModal(imageUrl) {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            modal.style.display = "block";
+            modalImg.src = imageUrl;
+            modalImg.style.transform = "rotate(0deg)"; // Reset rotation
+        }
+
+        // Close the modal
+        function closeModal() {
+            document.getElementById('imageModal').style.display = "none";
+        }
+
+        // Rotate the image by 90 degrees
+        function rotateImage() {
+            const modalImg = document.getElementById('modalImage');
+            const currentRotation = modalImg.style.transform || "rotate(0deg)";
+            const degrees = parseInt(currentRotation.match(/\d+/)[0]) || 0;
+            modalImg.style.transform = `rotate(${degrees + 90}deg)`;
+        }
+
+        // Add event listeners to file links
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileLinks = document.querySelectorAll('.file-link');
+            fileLinks.forEach(function(link) {
+                link.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    openModal(this.getAttribute('data-url'));
+                });
+            });
+        });
+
+        // Close the modal if the user clicks outside the image
+        window.onclick = function(event) {
+            const modal = document.getElementById('imageModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+    </script>
+</body>
+</html>
