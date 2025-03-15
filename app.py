@@ -1,10 +1,10 @@
 from flask import Flask, request, redirect, url_for, render_template, session
 import boto3
 from botocore.exceptions import NoCredentialsError
+import secrets
 
 app = Flask(__name__)
-##app.secret_key = 'your_secret_key'  # Use a secure random key in production
-app.secret_key = 'some_random_string_12345'
+app.secret_key = secrets.token_hex(24) 
 
 
 # Landing page route
