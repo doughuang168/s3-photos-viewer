@@ -37,9 +37,6 @@ Simple docker image to view photos resides in AWS S3 Bucket.
 docker build -t s3-photos-viewer .
 ## How to run
   ```bash
-docker run -p 8080:8080 \
-           -e BUCKET=<your-aws-s3-bucket> \
-           -e AUTH_KEY=<your-aws-iam-access-key-id>:<your-aws-iam-secret-access-key> \
-           s3-photos-viewer
+docker run -p 8080:8080 s3-photos-viewer
   ```
 				 		   
