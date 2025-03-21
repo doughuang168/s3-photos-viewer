@@ -1,12 +1,6 @@
-# Use the AWS Lambda Python base image
-FROM public.ecr.aws/lambda/python:3.9
-
-# Install dependencies
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-# Copy the application code
+FROM public.ecr.aws/docker/library/python:3.12.1-slim
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.0 /lambda-adapter /opt/extensions/lambda-adapter
+WORKDIR /var/task
 COPY . .
-
-# Set the entry point for Lambda
-CMD ["app.handler"]
+RUN python -m pip install -r requirements.txt
+CMD ["gunicorn", "-b=:8080", "-w=1", "app:app"]
