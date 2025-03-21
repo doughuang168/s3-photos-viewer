@@ -2,7 +2,7 @@ from flask import Flask, request, redirect, url_for, render_template, session
 import boto3
 from botocore.exceptions import NoCredentialsError
 import secrets
-from awsgi import response
+
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(24) 
@@ -75,5 +75,5 @@ def view(filename):
         return str(e), 500
 
 # Lambda handler
-def handler(event, context):
-       return response(app, event, context)
+#def handler(event, context):
+#       return response(app, event, context)
