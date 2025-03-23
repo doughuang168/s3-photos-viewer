@@ -19,15 +19,16 @@ data aws_caller_identity current {}
  
 locals {
   account_id          = data.aws_caller_identity.current.account_id
-  ecr_repository_name = var.ecr_repository_name 
-  ecr_image_tag       = var.ecr_image_tag 
+  ecr_repository_name = var.ecr_repository_name
+  ecr_image_tag       = var.ecr_image_tag
 }
+
 
 # Lambda Function
 resource "aws_lambda_function" "s3_photos_viewer" {
   function_name = local.ecr_repository_name 
   role          = aws_iam_role.lambda_exec.arn
-  image_uri     = "${local.account_id}.dkr.ecr.us-east-1.amazonaws.com/${local.ecr_repository_name}:${local.ecr_image_tag}"
+  image_uri     ="${local.account_id}.dkr.ecr.us-east-1.amazonaws.com/${local.ecr_repository_name}:${local.ecr_image_tag}"
   package_type  = "Image"
   timeout       = 30
 
@@ -40,6 +41,10 @@ resource "aws_lambda_function" "s3_photos_viewer" {
 
 
 resource "aws_lambda_permission" "apigw" {
+   depends_on = [
+     aws_apigatewayv2_route.proxy
+   ]
+
    statement_id  = "AllowAPIGatewayInvoke"
    action        = "lambda:InvokeFunction"
    function_name = aws_lambda_function.s3_photos_viewer.function_name
@@ -47,7 +52,7 @@ resource "aws_lambda_permission" "apigw" {
 
    # The "/*/*" portion grants access from any method on any resource
    # within the API Gateway REST API.
-   source_arn = "${aws_api_gateway_rest_api.s3_photos_viewer.execution_arn}/*/*"
+   source_arn = "${aws_apigatewayv2_api.s3_photos_viewer.execution_arn}/*/*"
 }
 
 
@@ -68,6 +73,7 @@ resource "aws_iam_role" "lambda_exec" {
     ]
   })
 }
+
 
 resource "aws_cloudwatch_log_group" "lambda_log_group" {
   # Creates a CloudWatch Log Group for CloudTrail logs
