@@ -1,4 +1,3 @@
-#ref doc: https://github.com/Donngi/terraform-example-apigateway-v2-lambda/blob/main/module/api-gateway/api-gateway.tf
 # API Gateway
 resource "aws_apigatewayv2_api" "s3_photos_viewer" {
   name          = "s3-photos-viewer"
@@ -36,4 +35,20 @@ resource "aws_apigatewayv2_route" "proxy" {
   route_key   = "$default"
   target      = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
+
+
+
+# Custom Domain
+
+# Custom Domain
+resource "aws_apigatewayv2_domain_name" "photos" {
+  domain_name = var.domain_name  
+
+  domain_name_configuration {
+    certificate_arn = aws_acm_certificate.photos.arn
+    endpoint_type   = "REGIONAL"
+    security_policy = "TLS_1_2"
+  }
+}
+
 
