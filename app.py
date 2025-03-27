@@ -66,7 +66,9 @@ def view(filename):
     s3 = boto3.client('s3', aws_access_key_id=access_key, aws_secret_access_key=secret_key)
 
     try:
-        url = s3.generate_presigned_url('get_object', Params={'Bucket': bucket, 'Key': filename}, ExpiresIn=3600)
+        url = s3.generate_presigned_url('get_object', 
+                                      Params={'Bucket': bucket, 'Key': filename}, 
+                                      ExpiresIn=3600)
         return redirect(url)
     except NoCredentialsError:
         return "Invalid credentials", 401

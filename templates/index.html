@@ -94,6 +94,11 @@
             <button class="nav-button" id="nextButton">Next ❯</button>
         </div>
     </div>
+    <!-- Add this near the bottom of <body> -->
+    <div id="fileListData"
+     data-files='{{ files|tojson }}'
+     style="display:none;">
+    </div>
 
     <script>
         // Open the modal and set the image source

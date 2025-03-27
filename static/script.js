@@ -1,44 +1,83 @@
-// Navigation variables at the top of the file
+// Global variables
 let currentImageIndex = 0;
-let allImageElements = [];
+let allFileUrls = [];
 
-// Modified openModal function
-function openModal(imgElement) {
+// Initialize when DOM loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all files from hidden div
+    const fileListData = document.getElementById('fileListData');
+    if (fileListData) {
+        //allFileUrls = JSON.parse(fileListData.getAttribute('data-files')); //Original implementation
+        allFileUrls = allFileUrls.map(file => file.trim().replace(/^\/+/, '')); //URL Normalization:
+    }
+
+    // Set up click handlers for file links
+    document.querySelectorAll('.file-link').forEach((link, index) => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            currentImageIndex = index; // Set correct starting index
+            openModal(this.getAttribute('data-url'));
+        });
+    });
+
+    // Navigation buttons
+    document.getElementById('prevButton')?.addEventListener('click', showPrevImage);
+    document.getElementById('nextButton')?.addEventListener('click', showNextImage);
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('imageModal');
+        if (modal.style.display === "block") {
+            if (e.key === 'ArrowLeft') showPrevImage();
+            if (e.key === 'ArrowRight') showNextImage();
+        }
+    });
+});
+
+// Modal functions
+function openModal(imageUrl) {
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('modalImage');
     
-    // Store all image elements if not already stored
-    if (allImageElements.length === 0) {
-        allImageElements = Array.from(document.querySelectorAll('.thumbnail'));
-    }
-    
-    // Find current index
-    currentImageIndex = allImageElements.indexOf(imgElement);
-    
     modal.style.display = "block";
-    modalImg.src = imgElement.src.replace('/thumbnails', '');
-    
-    // Update button states
+    modalImg.src = imageUrl;
     updateButtonStates();
+}
+
+function closeModal() {
+    document.getElementById('imageModal').style.display = "none";
 }
 
 // Navigation functions
 function showNextImage() {
-    if (currentImageIndex < allImageElements.length - 1) {
+    if (currentImageIndex < allFileUrls.length - 1) {
         currentImageIndex++;
-        const imgElement = allImageElements[currentImageIndex];
-        document.getElementById('modalImage').src = imgElement.src.replace('/thumbnails', '');
-        updateButtonStates();
+        updateModalImage();
     }
 }
 
 function showPrevImage() {
     if (currentImageIndex > 0) {
         currentImageIndex--;
-        const imgElement = allImageElements[currentImageIndex];
-        document.getElementById('modalImage').src = imgElement.src.replace('/thumbnails', '');
-        updateButtonStates();
+        updateModalImage();
     }
+}
+
+// Original implementation
+//function updateModalImage() {
+//    const modalImg = document.getElementById('modalImage');
+//    modalImg.src = `/view/${allFileUrls[currentImageIndex]}`;
+//    updateButtonStates();
+//}
+//Additional Improvements Visual Feedback:
+function updateModalImage() {
+    const modalImg = document.getElementById('modalImage');
+    modalImg.style.opacity = 0; // Fade out
+    setTimeout(() => {
+        modalImg.src = `/view/${allFileUrls[currentImageIndex]}`;
+        modalImg.style.opacity = 1; // Fade in
+        updateButtonStates();
+    }, 200);
 }
 
 function updateButtonStates() {
@@ -46,30 +85,5 @@ function updateButtonStates() {
     const nextButton = document.getElementById('nextButton');
     
     prevButton.disabled = currentImageIndex <= 0;
-    nextButton.disabled = currentImageIndex >= allImageElements.length - 1;
+    nextButton.disabled = currentImageIndex >= allFileUrls.length - 1;
 }
-
-// Update the thumbnail click handler
-document.querySelectorAll('.thumbnail').forEach(thumbnail => {
-    thumbnail.addEventListener('click', function() {
-        openModal(this); // Pass the clicked image element
-    });
-});
-
-// Add event listeners for navigation buttons
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('prevButton')?.addEventListener('click', showPrevImage);
-    document.getElementById('nextButton')?.addEventListener('click', showNextImage);
-    
-    // Keyboard navigation
-    document.addEventListener('keydown', function(event) {
-        const modal = document.getElementById('imageModal');
-        if (modal.style.display === "block") {
-            if (event.key === 'ArrowLeft') {
-                showPrevImage();
-            } else if (event.key === 'ArrowRight') {
-                showNextImage();
-            }
-        }
-    });
-});
