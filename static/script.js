@@ -7,8 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get all files from hidden div
     const fileListData = document.getElementById('fileListData');
     if (fileListData) {
-        //allFileUrls = JSON.parse(fileListData.getAttribute('data-files')); //Original implementation
-        allFileUrls = allFileUrls.map(file => file.trim().replace(/^\/+/, '')); //URL Normalization:
+        allFileUrls = JSON.parse(fileListData.getAttribute('data-files')); //Original implementation
+        //allFileUrls = allFileUrls.map(file => file.trim().replace(/^\/+/, '')); //URL Normalization:
     }
 
     // Set up click handlers for file links
@@ -64,21 +64,22 @@ function showPrevImage() {
 }
 
 // Original implementation
-//function updateModalImage() {
-//    const modalImg = document.getElementById('modalImage');
-//    modalImg.src = `/view/${allFileUrls[currentImageIndex]}`;
-//    updateButtonStates();
-//}
-//Additional Improvements Visual Feedback:
 function updateModalImage() {
     const modalImg = document.getElementById('modalImage');
-    modalImg.style.opacity = 0; // Fade out
-    setTimeout(() => {
-        modalImg.src = `/view/${allFileUrls[currentImageIndex]}`;
-        modalImg.style.opacity = 1; // Fade in
-        updateButtonStates();
-    }, 200);
+    modalImg.src = `/view/${allFileUrls[currentImageIndex]}`;
+    updateButtonStates();
 }
+
+//Additional Improvements Visual Feedback:
+//function updateModalImage() {
+//    const modalImg = document.getElementById('modalImage');
+//    modalImg.style.opacity = 0; // Fade out
+//    setTimeout(() => {
+//        modalImg.src = `/view/${allFileUrls[currentImageIndex]}`;
+//        modalImg.style.opacity = 1; // Fade in
+//        updateButtonStates();
+//    }, 200);
+//}
 
 function updateButtonStates() {
     const prevButton = document.getElementById('prevButton');
