@@ -6,7 +6,7 @@ WORKDIR      /usr/src/s3-photos-viewer
 
 COPY requirements.txt .
 
-RUN pip install -r requirements.txt && pip install pillow
+RUN pip install -r requirements.txt 
 
 COPY .       /usr/src/s3-photos-viewer/
 
