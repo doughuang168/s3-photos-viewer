@@ -1,6 +1,8 @@
 // Global variables
 let currentImageIndex = 0;
 let allFileUrls = [];
+// Global variable to track rotation per image
+let imageRotations = new Map();
 
 // Initialize when DOM loads
 document.addEventListener('DOMContentLoaded', function() {
@@ -69,25 +71,111 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Modal functions
+//
 function openModal(imageUrl) {
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('modalImage');
     
-    // Reset all transformations, following extra 2 lines address Rotation State Persistence issue
-    modalImg.style.transform = 'rotate(0deg)';
-    modalImg.dataset.rotation = '0'; // Store rotation state in dataset
-    //
-
+    // Reset to saved rotation state or 0
+    const rotation = imageRotations.get(imageUrl) || 0;
+    modalImg.style.transform = `rotate(${rotation}deg)`;
+    modalImg.dataset.rotation = rotation.toString();
+    modalImg.dataset.currentImage = imageUrl; // Track current image
+    
     modal.style.display = "block";
     modalImg.src = imageUrl;
     updateButtonStates();
 }
+
+function rotateImage() {
+    const modalImg = document.getElementById('modalImage');
+    const currentImage = modalImg.dataset.currentImage;
+    const currentRotation = parseInt(modalImg.dataset.rotation || '0');
+    const newRotation = (currentRotation + 90) % 360;
+    
+    // Update both display and stored rotation
+    modalImg.style.transform = `rotate(${newRotation}deg)`;
+    modalImg.dataset.rotation = newRotation.toString();
+    imageRotations.set(currentImage, newRotation);
+	
+    // Show temporary indicator
+    const indicator = document.createElement('div');
+    indicator.className = 'rotation-indicator';
+    indicator.textContent = `Rotated ${newRotation}°`;
+    document.getElementById('imageModal').appendChild(indicator);
+    
+    setTimeout(() => {
+        indicator.style.display = 'block';
+        setTimeout(() => {
+            indicator.style.opacity = '0';
+            setTimeout(() => indicator.remove(), 300);
+        }, 1000);
+    }, 10);
+    //
+}
+//Original v2 implementation 
+//function openModal(imageUrl) {
+//    const modal = document.getElementById('imageModal');
+//    const modalImg = document.getElementById('modalImage');
+//    
+//    // Reset all transformations, following extra 2 lines address Rotation State Persistence issue
+//    modalImg.style.transform = 'rotate(0deg)';
+//    modalImg.dataset.rotation = '0'; // Store rotation state in dataset
+//    //
+//
+//    modal.style.display = "block";
+//    modalImg.src = imageUrl;
+//    updateButtonStates();
+//}
 
 function closeModal() {
     document.getElementById('imageModal').style.display = "none";
 }
 
 // Navigation functions
+//
+// Update navigation functions to preserve rotation
+function showNextImage() {
+    const modalImg = document.getElementById('modalImage');
+    const currentImage = modalImg.dataset.currentImage;
+    const currentRotation = imageRotations.get(currentImage) || 0;
+    
+    if (currentImageIndex < allFileUrls.length - 1) {
+        currentImageIndex++;
+        const nextImage = `/view/${allFileUrls[currentImageIndex]}`;
+        
+        // Preserve rotation if image was viewed before
+        const nextRotation = imageRotations.get(nextImage) || 0;
+        modalImg.style.transform = `rotate(${nextRotation}deg)`;
+        modalImg.dataset.rotation = nextRotation.toString();
+        modalImg.dataset.currentImage = nextImage;
+        
+        modalImg.src = nextImage;
+        updateButtonStates();
+    }
+}
+
+function showPrevImage() {
+    const modalImg = document.getElementById('modalImage');
+    const currentImage = modalImg.dataset.currentImage;
+    const currentRotation = imageRotations.get(currentImage) || 0;
+
+    if (currentImageIndex > 0) {
+        currentImageIndex--;
+        const prevImage = `/view/${allFileUrls[currentImageIndex]}`;
+
+        // Preserve rotation if image was viewed before
+        const prevRotation = imageRotations.get(prevImage) || 0;
+        modalImg.style.transform = `rotate(${prevRotation}deg)`;
+        modalImg.dataset.rotation = prevRotation.toString();
+        modalImg.dataset.currentImage = prevImage;
+
+        modalImg.src = prevImage;
+        updateButtonStates();
+    }
+}
+//
+/*
 function showNextImage() {
     if (currentImageIndex < allFileUrls.length - 1) {
         currentImageIndex++;
@@ -101,24 +189,13 @@ function showPrevImage() {
         updateModalImage();
     }
 }
-
+*/
 // Original implementation
 function updateModalImage() {
     const modalImg = document.getElementById('modalImage');
     modalImg.src = `/view/${allFileUrls[currentImageIndex]}`;
     updateButtonStates();
 }
-
-//Additional Improvements Visual Feedback:
-//function updateModalImage() {
-//    const modalImg = document.getElementById('modalImage');
-//    modalImg.style.opacity = 0; // Fade out
-//    setTimeout(() => {
-//        modalImg.src = `/view/${allFileUrls[currentImageIndex]}`;
-//        modalImg.style.opacity = 1; // Fade in
-//        updateButtonStates();
-//    }, 200);
-//}
 
 function updateButtonStates() {
     const prevButton = document.getElementById('prevButton');

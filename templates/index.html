@@ -109,6 +109,7 @@
 
     <script>
         // Open the modal and set the image source
+        /*
         function openModal(imageUrl) {
             const modal = document.getElementById('imageModal');
             const modalImg = document.getElementById('modalImage');
@@ -116,13 +117,15 @@
             modalImg.src = imageUrl;
             modalImg.style.transform = "rotate(0deg)"; // Reset rotation
         }
+        */
 
         // Close the modal
-        function closeModal() {
-            document.getElementById('imageModal').style.display = "none";
-        }
+        //function closeModal() {
+        //    document.getElementById('imageModal').style.display = "none";
+        //}
 
         // Rotate the image by 90 degrees
+        /*
         function rotateImage() {
             //const modalImg = document.getElementById('modalImage');
             //const currentRotation = modalImg.style.transform || "rotate(0deg)";
@@ -137,8 +140,10 @@
             modalImg.style.transform = `rotate(${newRotation}deg)`;
             modalImg.dataset.rotation = newRotation.toString();
         }
+        */
 
         // Add event listeners to file links
+        /*
         document.addEventListener('DOMContentLoaded', function() {
             const fileLinks = document.querySelectorAll('.file-link');
             fileLinks.forEach(function(link) {
@@ -148,6 +153,7 @@
                 });
             });
         });
+        */
 
         // Close the modal if the user clicks outside the image
         window.onclick = function(event) {

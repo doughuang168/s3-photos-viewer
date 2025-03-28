@@ -79,31 +79,6 @@ def view(filename):
         return str(e), 500
 
 
-# NEW THUMBNAIL ROUTE - ADD THIS
-#@app.route('/thumbnail/<path:filename>')
-#def thumbnail(filename):
-#    if 'BUCKET' not in session or 'AUTH_KEY' not in session:
-#        return redirect(url_for('login'))
-#
-#    bucket = session['BUCKET']
-#    auth_key = session['AUTH_KEY']
-#    access_key, secret_key = auth_key.split(':')
-#
-#    s3 = boto3.client('s3', aws_access_key_id=access_key, aws_secret_access_key=secret_key)
-#
-#    try:
-#        # Basic implementation - redirects to original image
-#        # In production, implement actual thumbnail generation
-#        url = s3.generate_presigned_url('get_object',
-#                                      Params={'Bucket': bucket, 'Key': filename},
-#                                      ExpiresIn=3600)
-#        return redirect(url)
-#    except NoCredentialsError:
-#        return "Invalid credentials", 401
-#    except Exception as e:
-#        return str(e), 500
-
-
 @app.route('/thumbnail/<path:filename>')
 def thumbnail(filename):
     if 'BUCKET' not in session or 'AUTH_KEY' not in session:
