@@ -32,6 +32,40 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.key === 'ArrowRight') showNextImage();
         }
     });
+
+    ///////////
+    // Initialize Intersection Observer
+    const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                if (img.dataset.src) {
+                    img.src = img.dataset.src;
+                    img.onload = () => {
+                        img.classList.add('loaded');
+                        img.removeAttribute('data-src');
+                    };
+                    observer.unobserve(img);
+                }
+            }
+        });
+    }, {
+        rootMargin: '200px', // Load slightly before entering viewport
+        threshold: 0.01
+    });
+
+    // Observe all lazy-load images
+    document.querySelectorAll('.lazy-load').forEach(img => {
+        lazyLoadObserver.observe(img);
+    });
+
+    // Preload first 6 images immediately
+    document.querySelectorAll('.lazy-load:nth-child(-n+6)').forEach(img => {
+        img.src = img.dataset.src;
+        img.classList.add('loaded');
+        img.removeAttribute('data-src');
+    });
+    ///////////
 });
 
 // Modal functions
@@ -39,6 +73,11 @@ function openModal(imageUrl) {
     const modal = document.getElementById('imageModal');
     const modalImg = document.getElementById('modalImage');
     
+    // Reset all transformations, following extra 2 lines address Rotation State Persistence issue
+    modalImg.style.transform = 'rotate(0deg)';
+    modalImg.dataset.rotation = '0'; // Store rotation state in dataset
+    //
+
     modal.style.display = "block";
     modalImg.src = imageUrl;
     updateButtonStates();

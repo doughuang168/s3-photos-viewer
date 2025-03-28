@@ -70,19 +70,26 @@
     {% endif %}
 
     <!-- List Files -->
+    <!-- Replace your files list section with this -->
     {% if files %}
     <h3>Files</h3>
     <div class="gallery-container">
         {% for file in files %}
-            <div class="gallery-item">
-                <a href="#" class="file-link" data-url="{{ url_for('view', filename=file) }}" onclick="return false;">
-                    <img src="{{ url_for('thumbnail', filename=file) }}" class="thumbnail" alt="{{ file }}">
-                </a>
+        <div class="gallery-item">
+            <a href="#" class="file-link" data-url="{{ url_for('view', filename=file) }}">
+                <!-- Updated img tag with dynamic width -->
+                <img src="{{ url_for('static', filename='placeholder.png') }}"
+                     data-src="{{ url_for('thumbnail', filename=file) }}?w=200"
+                     class="thumbnail lazy-load"
+                     alt="{{ file.split('/')[-1] }}"
+                     loading="lazy">
                 <div class="filename">{{ file.split('/')[-1] }}</div>
-            </div>
+            </a>
+        </div>
         {% endfor %}
     </div>
     {% endif %}
+
 
     <!-- Modal for image preview -->
     <div id="imageModal" class="modal">
@@ -117,10 +124,18 @@
 
         // Rotate the image by 90 degrees
         function rotateImage() {
-            const modalImg = document.getElementById('modalImage');
-            const currentRotation = modalImg.style.transform || "rotate(0deg)";
-            const degrees = parseInt(currentRotation.match(/\d+/)[0]) || 0;
-            modalImg.style.transform = `rotate(${degrees + 90}deg)`;
+            //const modalImg = document.getElementById('modalImage');
+            //const currentRotation = modalImg.style.transform || "rotate(0deg)";
+            //const degrees = parseInt(currentRotation.match(/\d+/)[0]) || 0;
+            //modalImg.style.transform = `rotate(${degrees + 90}deg)`;
+
+	    // Above 4 original statements have Rotation State Persistence issue, following 5 statements fix that issue
+	    const modalImg = document.getElementById('modalImage');
+            const currentRotation = parseInt(modalImg.dataset.rotation || '0');
+            const newRotation = (currentRotation + 90) % 360;
+
+            modalImg.style.transform = `rotate(${newRotation}deg)`;
+            modalImg.dataset.rotation = newRotation.toString();
         }
 
         // Add event listeners to file links

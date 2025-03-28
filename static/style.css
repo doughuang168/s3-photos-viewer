@@ -43,6 +43,7 @@
     transition: transform 0.2s;
 }
 
+
 .thumbnail:hover {
     transform: scale(1.02);
 }
@@ -51,4 +52,55 @@
     margin-top: 5px;
     word-break: break-all;
     font-size: 0.8em;
+}
+
+/* ABOVE block are before Lazy loading styles implementation */
+/* Lazy loading styles */
+.thumbnail {
+    background-color: #f5f5f5;
+    transition: opacity 0.3s;
+}
+
+.thumbnail[data-src] {
+    opacity: 0;
+}
+
+.thumbnail.loaded {
+    opacity: 1;
+}
+
+/* Gallery layout */
+.gallery-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    padding: 16px;
+}
+
+.gallery-item {
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.2s;
+}
+
+.gallery-item:hover {
+    transform: translateY(-4px);
+}
+
+.filename {
+    padding: 8px 0;
+    font-size: 14px;
+    word-break: break-word;
+}
+
+/* Loading animation */
+@keyframes shimmer {
+    0% { background-position: -468px 0 }
+    100% { background-position: 468px 0 }
+}
+
+.thumbnail:not(.loaded) {
+    animation: shimmer 1.5s infinite linear;
+    background: linear-gradient(to right, #f5f5f5 8%, #e0e0e0 18%, #f5f5f5 33%);
+    background-size: 800px 104px;
 }
