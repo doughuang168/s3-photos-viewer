@@ -1,9 +1,14 @@
-from flask import Flask, request, redirect, url_for, render_template, session, send_file
+from flask import Flask, request, redirect, url_for, render_template, session, send_file, make_response
 import boto3
 from botocore.exceptions import NoCredentialsError
 import secrets
 from io import BytesIO
 from PIL import Image, ImageOps
+from contextlib import closing
+import os
+import hashlib
+#import logging
+
 
 
 app = Flask(__name__)
@@ -87,14 +92,14 @@ def thumbnail(filename):
 
     ######
     # Create cache key
-    cache_key = hashlib.md5(f"{filename}-{width}".encode()).hexdigest()
-    cache_dir = "/app/thumbnail_cache"  # Mount this volume in Docker
+    #cache_key = hashlib.md5(f"{filename}-{width}".encode()).hexdigest()
+    #cache_dir = "/app/thumbnail_cache"  # Mount this volume in Docker
 
     # Check cache
-    cache_path = os.path.join(cache_dir, f"{cache_key}.jpg")
-    if os.path.exists(cache_path):
-        with open(cache_path, 'rb') as f:
-            return send_file(f, mimetype='image/jpeg')
+    #cache_path = os.path.join(cache_dir, f"{cache_key}.jpg")
+    #if os.path.exists(cache_path):
+    #    with open(cache_path, 'rb') as f:
+    #        return send_file(f, mimetype='image/jpeg')
     ######
 
     bucket = session['BUCKET']
@@ -106,6 +111,18 @@ def thumbnail(filename):
         width = min(int(width), 1000)
     except ValueError:
         width = 400
+
+    ######
+    # Create cache key
+    cache_key = hashlib.md5(f"{filename}-{width}".encode()).hexdigest()
+    cache_dir = "/app/thumbnail_cache"  # Mount this volume in Docker
+
+    # Check cache
+    cache_path = os.path.join(cache_dir, f"{cache_key}.jpg")
+    if os.path.exists(cache_path):
+        with open(cache_path, 'rb') as f:
+            return send_file(f, mimetype='image/jpeg')
+    ######
 
     s3 = boto3.client('s3',
                      aws_access_key_id=access_key,
@@ -137,17 +154,16 @@ def thumbnail(filename):
         img.save(img_byte_arr, format='JPEG', quality=85, optimize=True, progressive=True)
         img_byte_arr.seek(0)
 
-        #response = send_file(img_byte_arr, mimetype='image/jpeg')
-        #response.headers['Cache-Control'] = 'public, max-age=31536000'
-        #return response
-
         ####
         # Save to cache
         os.makedirs(cache_dir, exist_ok=True)
         with open(cache_path, 'wb') as f:
             f.write(img_byte_arr.getvalue())
 
-        return send_file(img_byte_arr, mimetype='image/jpeg')
+        #return send_file(img_byte_arr, mimetype='image/jpeg')
+        response = send_file(img_byte_arr, mimetype='image/jpeg')
+        response.headers['Cache-Control'] = 'public, max-age=31536000'
+        return response
         ####
 
     except Exception as e:
