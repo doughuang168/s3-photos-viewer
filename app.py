@@ -7,7 +7,35 @@ from PIL import Image, ImageOps
 from contextlib import closing
 import os
 import hashlib
-#import logging
+import logging
+from apscheduler.schedulers.background import BackgroundScheduler
+
+def prune_cache(max_size_mb=1024):
+    """Keep cache under specified size"""
+    cache_dir = "/app/thumbnail_cache"
+    if not os.path.exists(cache_dir):
+        return
+
+    files = []
+    for f in os.listdir(cache_dir):
+        path = os.path.join(cache_dir, f)
+        if os.path.isfile(path):
+            files.append((path, os.path.getmtime(path)))
+
+    # Sort by oldest first
+    files.sort(key=lambda x: x[1])
+
+    total_size = sum(os.path.getsize(f[0]) for f in files)
+    max_size = max_size_mb * 1024 * 1024
+
+    while total_size > max_size and files:
+        oldest = files.pop(0)
+        os.remove(oldest[0])
+        total_size -= os.path.getsize(oldest[0])
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(prune_cache, 'interval', hours=1)
+scheduler.start()
 
 
 app = Flask(__name__)
@@ -88,74 +116,100 @@ def thumbnail(filename):
     if 'BUCKET' not in session or 'AUTH_KEY' not in session:
         return redirect(url_for('login'))
 
+    # Validate input
+    if '../' in filename or not filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+        abort(400)
 
+    # Setup
     bucket = session['BUCKET']
     auth_key = session['AUTH_KEY']
     access_key, secret_key = auth_key.split(':')
+    width = min(int(request.args.get('w', '400')), 1000)
 
-    width = request.args.get('w', default='400')
-    try:
-        width = min(int(width), 1000)
-    except ValueError:
-        width = 400
-
+    # Create cache directory if not exists
+    cache_dir = "/app/thumbnail_cache"
+    os.makedirs(cache_dir, exist_ok=True)
+    
     # Create cache key
     cache_key = hashlib.md5(f"{filename}-{width}".encode()).hexdigest()
-    cache_dir = "/app/thumbnail_cache"  # Mount this volume in Docker
-
-    # Check cache
     cache_path = os.path.join(cache_dir, f"{cache_key}.jpg")
-    if os.path.exists(cache_path):
-        with open(cache_path, 'rb') as f:
-            return send_file(f, mimetype='image/jpeg')
 
-    s3 = boto3.client('s3',
-                     aws_access_key_id=access_key,
-                     aws_secret_access_key=secret_key)
+    # Try serving from cache first
+    if os.path.exists(cache_path):
+        try:
+            # Create response with proper caching headers
+            response = send_file(
+                cache_path,
+                mimetype='image/jpeg'
+            )
+            response.headers['Cache-Control'] = 'public, max-age=31536000'  # 1 year
+            return response
+        except Exception as e:
+            logging.error(f"Cache read error: {str(e)}")
+            # Fall through to regeneration
 
     try:
-        if not filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+        # Initialize S3 client
+        s3 = boto3.client('s3',
+                         aws_access_key_id=access_key,
+                         aws_secret_access_key=secret_key)
+
+        # Get original image
+        response = s3.get_object(Bucket=bucket, Key=filename)
+        if response['ContentLength'] > 10_000_000:  # 10MB limit
+            return redirect(url_for('view', filename=filename))
+
+        # Process image
+        with BytesIO(response['Body'].read()) as original_buffer:
+            with Image.open(original_buffer) as img:
+                img = ImageOps.exif_transpose(img)
+                
+                # Calculate new dimensions
+                ratio = width / float(img.size[0])
+                new_height = int(float(img.size[1]) * ratio)
+                
+                # Create thumbnail
+                img.thumbnail((width, new_height), Image.Resampling.LANCZOS)
+                
+                # Save to temporary buffer
+                with BytesIO() as output_buffer:
+                    img.save(output_buffer, format='JPEG', quality=85, optimize=True, progressive=True)
+                    output_buffer.seek(0)
+                    
+                    # Write to cache (atomic write pattern)
+                    temp_cache_path = f"{cache_path}.tmp"
+                    try:
+                        with open(temp_cache_path, 'wb') as f:
+                            f.write(output_buffer.getvalue())
+                        os.rename(temp_cache_path, cache_path)  # Atomic operation
+                    except Exception as e:
+                        logging.error(f"Cache write failed: {str(e)}")
+                        if os.path.exists(temp_cache_path):
+                            os.remove(temp_cache_path)
+                    
+                    # Return the image with caching headers
+                    output_buffer.seek(0)
+                    response = make_response(send_file(
+                        output_buffer,
+                        mimetype='image/jpeg'
+                    ))
+                    response.headers['Cache-Control'] = 'public, max-age=31536000'
+                    return response
+
+    except Exception as e:
+        logging.error(f"Thumbnail generation failed: {str(e)}")
+        # Fallback to original image
+        try:
+            s3 = boto3.client('s3',
+                             aws_access_key_id=access_key,
+                             aws_secret_access_key=secret_key)
             url = s3.generate_presigned_url('get_object',
                                           Params={'Bucket': bucket, 'Key': filename},
                                           ExpiresIn=3600)
             return redirect(url)
-
-        # Get image and handle orientation
-        response = s3.get_object(Bucket=bucket, Key=filename)
-        img = Image.open(BytesIO(response['Body'].read()))
-
-        # Fix orientation
-        img = ImageOps.exif_transpose(img)
-
-        # Resize maintaining aspect ratio
-        original_width, original_height = img.size
-        ratio = width / float(original_width)
-        new_height = int(float(original_height) * ratio)
-
-        img.thumbnail((width, new_height), Image.Resampling.LANCZOS)
-
-        # Save as progressive JPEG
-        img_byte_arr = BytesIO()
-        img.save(img_byte_arr, format='JPEG', quality=85, optimize=True, progressive=True)
-        img_byte_arr.seek(0)
-
-        # Save to cache
-        os.makedirs(cache_dir, exist_ok=True)
-        with open(cache_path, 'wb') as f:
-            f.write(img_byte_arr.getvalue())
-
-        #return send_file(img_byte_arr, mimetype='image/jpeg')
-        response = send_file(img_byte_arr, mimetype='image/jpeg')
-        response.headers['Cache-Control'] = 'public, max-age=31536000'
-        return response
-
-    except Exception as e:
-        print(f"Thumbnail generation failed: {str(e)}")
-        url = s3.generate_presigned_url('get_object',
-                                      Params={'Bucket': bucket, 'Key': filename},
-                                      ExpiresIn=3600)
-        return redirect(url)
-
+        except Exception as e:
+            logging.error(f"Fallback failed: {str(e)}")
+            abort(500)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
