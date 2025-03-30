@@ -1,10 +1,12 @@
-from flask import Flask, request, redirect, url_for, render_template, session, send_file
+from flask import Flask, request, redirect, url_for, render_template, session, send_file, make_response
 import boto3
 from botocore.exceptions import NoCredentialsError
 import secrets
 from io import BytesIO
 from PIL import Image, ImageOps
-
+from contextlib import closing
+import os
+#import logging
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(24) 
@@ -84,52 +86,56 @@ def thumbnail(filename):
     if 'BUCKET' not in session or 'AUTH_KEY' not in session:
         return redirect(url_for('login'))
 
+    # Validate input
+    if '../' in filename or not filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+        abort(400)
+
+    # Setup
     bucket = session['BUCKET']
     auth_key = session['AUTH_KEY']
     access_key, secret_key = auth_key.split(':')
+    width = min(int(request.args.get('w', '400')), 1000)
 
-    width = request.args.get('w', default='400')
     try:
-        width = min(int(width), 1000)
-    except ValueError:
-        width = 400
-
-    s3 = boto3.client('s3',
+        with closing(boto3.client('s3', 
                      aws_access_key_id=access_key,
-                     aws_secret_access_key=secret_key)
-
-    try:
-        if not filename.lower().endswith(('.jpg', '.jpeg', '.png')):
-            url = s3.generate_presigned_url('get_object',
-                                          Params={'Bucket': bucket, 'Key': filename},
-                                          ExpiresIn=3600)
-            return redirect(url)
-
-        # Get image and handle orientation
-        response = s3.get_object(Bucket=bucket, Key=filename)
-        img = Image.open(BytesIO(response['Body'].read()))
-
-        # Fix orientation
-        img = ImageOps.exif_transpose(img)
-
-        # Resize maintaining aspect ratio
-        original_width, original_height = img.size
-        ratio = width / float(original_width)
-        new_height = int(float(original_height) * ratio)
-
-        img.thumbnail((width, new_height), Image.Resampling.LANCZOS)
-
-        # Save as progressive JPEG
-        img_byte_arr = BytesIO()
-        img.save(img_byte_arr, format='JPEG', quality=85, optimize=True, progressive=True)
-        img_byte_arr.seek(0)
-
-        response = send_file(img_byte_arr, mimetype='image/jpeg')
-        response.headers['Cache-Control'] = 'public, max-age=31536000'
-        return response
-
+                     aws_secret_access_key=secret_key)) as s3:
+            
+            # Get image
+            response = s3.get_object(Bucket=bucket, Key=filename)
+            if response['ContentLength'] > 10_000_000:  # 10MB limit
+                return redirect(url_for('view', filename=filename))
+            
+            try:
+                # Process image
+                img = Image.open(BytesIO(response['Body'].read()))
+                img = ImageOps.exif_transpose(img)
+                
+                # Resize
+                ratio = width / float(img.size[0])
+                new_height = int(float(img.size[1]) * ratio)
+                img.thumbnail((width, new_height), Image.Resampling.LANCZOS)
+                
+                # Save to cache
+                with BytesIO() as output:
+                    img.save(output, format='JPEG', quality=85, optimize=True, progressive=True)
+                    output.seek(0)
+                    
+                    response = make_response(send_file(output, mimetype='image/jpeg'))
+                    response.headers['Cache-Control'] = 'public, max-age=31536000'
+                    return response
+                    
+            finally:
+                if 'img' in locals():
+                    img.close()
+                    
     except Exception as e:
         print(f"Thumbnail generation failed: {str(e)}")
+        #logging.error(f"Thumbnail error: {str(e)}")
+        # Fallback to original image
+        s3 = boto3.client('s3',
+                         aws_access_key_id=access_key,
+                         aws_secret_access_key=secret_key)
         url = s3.generate_presigned_url('get_object',
                                       Params={'Bucket': bucket, 'Key': filename},
                                       ExpiresIn=3600)
