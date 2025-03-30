@@ -10,7 +10,6 @@ import hashlib
 #import logging
 
 
-
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(24) 
 
@@ -90,18 +89,6 @@ def thumbnail(filename):
         return redirect(url_for('login'))
 
 
-    ######
-    # Create cache key
-    #cache_key = hashlib.md5(f"{filename}-{width}".encode()).hexdigest()
-    #cache_dir = "/app/thumbnail_cache"  # Mount this volume in Docker
-
-    # Check cache
-    #cache_path = os.path.join(cache_dir, f"{cache_key}.jpg")
-    #if os.path.exists(cache_path):
-    #    with open(cache_path, 'rb') as f:
-    #        return send_file(f, mimetype='image/jpeg')
-    ######
-
     bucket = session['BUCKET']
     auth_key = session['AUTH_KEY']
     access_key, secret_key = auth_key.split(':')
@@ -112,7 +99,6 @@ def thumbnail(filename):
     except ValueError:
         width = 400
 
-    ######
     # Create cache key
     cache_key = hashlib.md5(f"{filename}-{width}".encode()).hexdigest()
     cache_dir = "/app/thumbnail_cache"  # Mount this volume in Docker
@@ -122,7 +108,6 @@ def thumbnail(filename):
     if os.path.exists(cache_path):
         with open(cache_path, 'rb') as f:
             return send_file(f, mimetype='image/jpeg')
-    ######
 
     s3 = boto3.client('s3',
                      aws_access_key_id=access_key,
@@ -154,7 +139,6 @@ def thumbnail(filename):
         img.save(img_byte_arr, format='JPEG', quality=85, optimize=True, progressive=True)
         img_byte_arr.seek(0)
 
-        ####
         # Save to cache
         os.makedirs(cache_dir, exist_ok=True)
         with open(cache_path, 'wb') as f:
@@ -164,7 +148,6 @@ def thumbnail(filename):
         response = send_file(img_byte_arr, mimetype='image/jpeg')
         response.headers['Cache-Control'] = 'public, max-age=31536000'
         return response
-        ####
 
     except Exception as e:
         print(f"Thumbnail generation failed: {str(e)}")

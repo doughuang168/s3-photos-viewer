@@ -35,7 +35,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    ///////////
     // Initialize Intersection Observer
     const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
@@ -67,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
         img.classList.add('loaded');
         img.removeAttribute('data-src');
     });
-    ///////////
+    
 });
 
 // Modal functions
@@ -113,20 +112,6 @@ function rotateImage() {
     }, 10);
     //
 }
-//Original v2 implementation 
-//function openModal(imageUrl) {
-//    const modal = document.getElementById('imageModal');
-//    const modalImg = document.getElementById('modalImage');
-//    
-//    // Reset all transformations, following extra 2 lines address Rotation State Persistence issue
-//    modalImg.style.transform = 'rotate(0deg)';
-//    modalImg.dataset.rotation = '0'; // Store rotation state in dataset
-//    //
-//
-//    modal.style.display = "block";
-//    modalImg.src = imageUrl;
-//    updateButtonStates();
-//}
 
 function closeModal() {
     document.getElementById('imageModal').style.display = "none";
@@ -175,21 +160,6 @@ function showPrevImage() {
     }
 }
 //
-/*
-function showNextImage() {
-    if (currentImageIndex < allFileUrls.length - 1) {
-        currentImageIndex++;
-        updateModalImage();
-    }
-}
-
-function showPrevImage() {
-    if (currentImageIndex > 0) {
-        currentImageIndex--;
-        updateModalImage();
-    }
-}
-*/
 // Original implementation
 function updateModalImage() {
     const modalImg = document.getElementById('modalImage');
