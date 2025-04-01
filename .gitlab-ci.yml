@@ -1,0 +1,73 @@
+image:
+  name: public.ecr.aws/f5s3w0u8/opentofu:latest
+  entrypoint:
+    - '/usr/bin/env'
+    - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+
+##############################################################
+#                       DANGER ZONE!                         #
+# this job will destroy your infrastructure                  #
+# use it only if you need to remove your Terraform resources #
+##############################################################
+.destroy_template: &destroy_template
+  stage: flush
+  when: manual
+  script:
+    - tofu destroy -auto-approve
+
+before_script:
+  - rm -rf .terraform
+  - tofu --version
+  - echo "Configuring Terraform Backend"
+  - export TF_HTTP_ADDRESS="https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/terraform/state/${ENV_LC}"
+  - export TF_HTTP_LOCK_ADDRESS="https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/terraform/state/${ENV_LC}/lock"
+  - export TF_HTTP_UNLOCK_ADDRESS="https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/terraform/state/${ENV_LC}/lock"
+  - export TF_HTTP_LOCK_METHOD="POST"
+  - export TF_HTTP_UNLOCK_METHOD="DELETE"
+  - export TF_HTTP_USERNAME="$MY_CI_JOB_KEY"
+  - export TF_HTTP_PASSWORD="$MY_CI_JOB_TOKEN"
+  - tofu init 
+
+
+stages:
+  - validate
+  - plan
+  - apply
+  - flush
+
+variables:
+  AWS_DEFAULT_REGION: "us-east-1"
+  AWS_ACCESS_KEY_ID: $GITLAB_CI_AWS_API_KEY
+  AWS_SECRET_ACCESS_KEY: $GITLAB_CI_AWS_API_SECRET
+  MY_CI_JOB_TOKEN: $MY_GITLAB_ACCESS_TOKEN
+  MY_CI_JOB_KEY: $MY_GITLAB_ACCESS_KEY
+  CI_PROJECT_ID: $CI_PROJECT_ID
+  ENV_LC: "api-gateway"
+
+validate:
+  stage: validate
+  script:
+    - tofu validate
+
+plan:
+  stage: plan
+  script:
+    - tofu plan -out "planfile"
+  dependencies:
+    - validate
+  artifacts:
+    paths:
+      - planfile
+
+apply:
+  stage: apply
+  script:
+    - tofu apply "planfile" 
+  dependencies:
+    - plan
+  when: manual
+
+destroyt:
+  <<: *destroy_template
+
+
