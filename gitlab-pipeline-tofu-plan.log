@@ -183,4 +183,34 @@ OpenTofu will perform the following actions:
       + statement_id        = "AllowAPIGatewayInvoke"
       + statement_id_prefix = (known after apply)
     }
-Plan: 9 to add, 0 to change, 0 to destroy.
+  # aws_apigatewayv2_domain_name.photos will be created
+  + resource "aws_apigatewayv2_domain_name" "photos" {
+      + api_mapping_selection_expression = (known after apply)
+      + arn                              = (known after apply)
+      + domain_name                      = "photos.example.com"
+      + id                               = (known after apply)
+      + tags_all                         = (known after apply)
+      + domain_name_configuration {
+          + certificate_arn                        = "arn:aws:acm:us-east-1:123456789012:certificate/e0e96b6b-63f9-4ce6-b488-5b05c12bc2f8"
+          + endpoint_type                          = "REGIONAL"
+          + hosted_zone_id                         = (known after apply)
+          + ownership_verification_certificate_arn = (known after apply)
+          + security_policy                        = "TLS_1_2"
+          + target_domain_name                     = (known after apply)
+        }
+    }
+  # aws_route53_record.photos will be created
+  + resource "aws_route53_record" "photos" {
+      + allow_overwrite = (known after apply)
+      + fqdn            = (known after apply)
+      + id              = (known after apply)
+      + name            = "photos.example.com"
+      + type            = "A"
+      + zone_id         = "your-zone-id"
+      + alias {
+          + evaluate_target_health = false
+          + name                   = (known after apply)
+          + zone_id                = (known after apply)
+        }
+    }
+Plan: 11 to add, 0 to change, 0 to destroy.
