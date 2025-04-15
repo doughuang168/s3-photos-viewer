@@ -3,4 +3,4 @@ COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.0 /lambda-adapter /opt
 WORKDIR /var/task
 COPY . .
 RUN python -m pip install -r requirements.txt
-CMD ["gunicorn", "-b=:8080", "-w=1", "app:app"]
+CMD ["gunicorn", "-b=:8000", "-w=1", "app:app"]
